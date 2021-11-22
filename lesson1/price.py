@@ -4,4 +4,3 @@ def format_price(price):
 
 price_text = format_price(56.24)
 print(price_text)
-

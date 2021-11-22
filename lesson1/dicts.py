@@ -14,4 +14,3 @@ weather["date"] = "27.05.2019"
 
 pprint(weather)
 print(len(weather))
-
