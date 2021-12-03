@@ -1,10 +1,11 @@
 import ephem
 import logging
-from datetime import date
+import re
+from datetime import date, datetime
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 import settings
-from variables import PLANETS, INFO_TEXT, SOLAR_STRUCTURE_TEXT, HELLO_TEXT
+from const import PLANETS, INFO_TEXT, SOLAR_STRUCTURE_TEXT, HELLO_TEXT
 
 logging.basicConfig(filename="bot.log", level=logging.INFO)
 
@@ -54,7 +55,59 @@ def get_constellation_by_planet(update, context):
     update.message.reply_text(message)
 
 
+def get_word_count(update, context):
+    logging.info("Call method /wordcount")
+    text = update.message.text.lower()
+    normalized = re.sub('[^a-zа-я ]', '', text)
+    length = len(normalized.split())
+
+    if length < 2:
+        update.message.reply_text("‼️ Вы не ввели фразу")
+        return
+
+    update.message.reply_text(f"Количество слов во фразе {length - 1}")
+
+
+def get_next_full_moon(update, context):
+    logging.info("Call method /next_full_moon")
+    command_words = update.message.text.split()
+
+    if len(command_words) < 2:
+        update.message.reply_text("‼️ Вы не ввели дату")
+        return
+
+    try:
+        dt = datetime.strptime(command_words[1], '%Y-%m-%d')
+    except ValueError:
+        update.message.reply_text("‼️ Неверный формат даты")
+        return
+
+    full_moon_date = ephem.next_full_moon(dt)
+    update.message.reply_text(f"Следующее полнолуние будет {full_moon_date.datetime().strftime('%Y-%m-%d')}")
+
+
+def calculate_int(update, context):
+    logging.info("Call method /calc")
+    command_words = update.message.text.split()
+
+    if len(command_words) < 2:
+        update.message.reply_text("‼️ Вы не ввели выражение")
+        return
+
+    expression = ''.join(command_words[1:])
+    normalized = re.sub('[^0-9-+*/]', '', expression)
+
+    try:
+        result = eval(normalized)
+    except [ZeroDivisionError, NameError, ValueError]:
+        update.message.reply_text("‼️ Вы ввели неверное выражение")
+        return
+
+    update.message.reply_text(f"Результат выражения {result}")
+
+
 def echo(update, context):
+    logging.info("Call function 'echo'")
     text = update.message.text
     update.message.reply_text(text)
 
@@ -66,6 +119,9 @@ def main():
     dp.add_handler(CommandHandler("start", hello))
     dp.add_handler(CommandHandler("help", info))
     dp.add_handler(CommandHandler("planet", get_constellation_by_planet))
+    dp.add_handler(CommandHandler("wordcount", get_word_count))
+    dp.add_handler(CommandHandler("next_full_moon", get_next_full_moon))
+    dp.add_handler(CommandHandler("calc", calculate_int))
     dp.add_handler(MessageHandler(Filters.text, echo))
 
     logging.info("Bot starting...")
