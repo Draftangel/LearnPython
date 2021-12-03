@@ -86,6 +86,26 @@ def get_next_full_moon(update, context):
     update.message.reply_text(f"Следующее полнолуние будет {full_moon_date.datetime().strftime('%Y-%m-%d')}")
 
 
+def calculate_int(update, context):
+    logging.info("Call method /calc")
+    command_words = update.message.text.split()
+
+    if len(command_words) < 2:
+        update.message.reply_text("‼️ Вы не ввели выражение")
+        return
+
+    expression = ''.join(command_words[1:])
+    normalized = re.sub('[^0-9-+*/]', '', expression)
+
+    try:
+        result = eval(normalized)
+    except [ZeroDivisionError, NameError, ValueError]:
+        update.message.reply_text("‼️ Вы ввели неверное выражение")
+        return
+
+    update.message.reply_text(f"Результат выражения {result}")
+
+
 def echo(update, context):
     logging.info("Call function 'echo'")
     text = update.message.text
@@ -101,6 +121,7 @@ def main():
     dp.add_handler(CommandHandler("planet", get_constellation_by_planet))
     dp.add_handler(CommandHandler("wordcount", get_word_count))
     dp.add_handler(CommandHandler("next_full_moon", get_next_full_moon))
+    dp.add_handler(CommandHandler("calc", calculate_int))
     dp.add_handler(MessageHandler(Filters.text, echo))
 
     logging.info("Bot starting...")
